@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <ClientSemVer>1.25.0</ClientSemVer>
+  </PropertyGroup>
+</Project>
