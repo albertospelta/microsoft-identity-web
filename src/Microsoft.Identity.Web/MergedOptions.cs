@@ -246,13 +246,34 @@ namespace Microsoft.Identity.Web
 
             mergedOptions.Scope.Clear();
 
-            foreach (var scope in microsoftIdentityOptions.Scope)
+            // BUGFIX BACKPORTING
+            // GH Issue > UpdateMergedOptionsFromMicrosoftIdentityOptions Collection was modified; enumeration operation may not execute.
+            // https://github.com/AzureAD/microsoft-identity-web/issues/1957
+            // https://github.com/AzureAD/microsoft-identity-web/commit/c263c1af53ad34e26d1d39c9e28b25a02aa4db7b#diff-3fd6d0e685dd066a28047a579d630ab04dadd5e53e8cc294c58e43723214f6c8
+            //
+            // >> BEGIN
             {
-                if (!string.IsNullOrWhiteSpace(scope) && !mergedOptions.Scope.Any(s => string.Equals(s, scope, StringComparison.OrdinalIgnoreCase)))
+                //foreach (var scope in microsoftIdentityOptions.Scope)
+                //{
+                //    if (!string.IsNullOrWhiteSpace(scope) && !mergedOptions.Scope.Any(s => string.Equals(s, scope, StringComparison.OrdinalIgnoreCase)))
+                //    {
+                //        mergedOptions.Scope.Add(scope);
+                //    }
+                //}
+
+                if (mergedOptions.Scope != microsoftIdentityOptions.Scope)
                 {
-                    mergedOptions.Scope.Add(scope);
+                    var temp = mergedOptions.Scope.ToArray();
+                    foreach (var scope in microsoftIdentityOptions.Scope)
+                    {
+                        if (!string.IsNullOrWhiteSpace(scope) && !temp.Any(s => string.Equals(s, scope, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            mergedOptions.Scope.Add(scope);
+                        }
+                    }
                 }
             }
+            // << END
         }
 
         internal static void UpdateMergedOptionsFromConfidentialClientApplicationOptions(ConfidentialClientApplicationOptions confidentialClientApplicationOptions, MergedOptions mergedOptions)

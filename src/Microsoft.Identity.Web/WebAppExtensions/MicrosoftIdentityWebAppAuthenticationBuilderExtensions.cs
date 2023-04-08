@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
@@ -422,10 +423,32 @@ namespace Microsoft.Identity.Web
             options.Configuration = mergedOptions.Configuration;
             options.ConfigurationManager = mergedOptions.ConfigurationManager;
             options.GetClaimsFromUserInfoEndpoint = mergedOptions.GetClaimsFromUserInfoEndpoint;
-            foreach (ClaimAction c in mergedOptions.ClaimActions)
+
+            // BUGFIX BACKPORTING
+            // GH Issue > UpdateMergedOptionsFromMicrosoftIdentityOptions Collection was modified; enumeration operation may not execute.
+            // https://github.com/AzureAD/microsoft-identity-web/issues/1957
+            // https://github.com/AzureAD/microsoft-identity-web/commit/c263c1af53ad34e26d1d39c9e28b25a02aa4db7b#diff-3fd6d0e685dd066a28047a579d630ab04dadd5e53e8cc294c58e43723214f6c8
+            //
+            // >> BEGIN
             {
-                options.ClaimActions.Add(c);
+                //foreach (ClaimAction c in mergedOptions.ClaimActions)
+                //{
+                //    options.ClaimActions.Add(c);
+                //}
+
+                if (options.ClaimActions != mergedOptions.ClaimActions)
+                {
+                    var claimActionArray = options.ClaimActions.ToArray();
+                    foreach (ClaimAction claimAction in mergedOptions.ClaimActions)
+                    {
+                        if (!claimActionArray.Any((c => c.ClaimType == claimAction.ClaimType && c.ValueType == claimAction.ValueType)))
+                        {
+                            options.ClaimActions.Add(claimAction);
+                        }
+                    }
+                }
             }
+            // << END
 
             options.RequireHttpsMetadata = mergedOptions.RequireHttpsMetadata;
             options.MetadataAddress = mergedOptions.MetadataAddress;
@@ -440,10 +463,31 @@ namespace Microsoft.Identity.Web
             options.ResponseType = mergedOptions.ResponseType;
             options.Prompt = mergedOptions.Prompt;
 
-            foreach (string scope in mergedOptions.Scope)
+            // BUGFIX BACKPORTING
+            // GH Issue > UpdateMergedOptionsFromMicrosoftIdentityOptions Collection was modified; enumeration operation may not execute.
+            // https://github.com/AzureAD/microsoft-identity-web/issues/1957
+            // https://github.com/AzureAD/microsoft-identity-web/commit/c263c1af53ad34e26d1d39c9e28b25a02aa4db7b#diff-3fd6d0e685dd066a28047a579d630ab04dadd5e53e8cc294c58e43723214f6c8
+            //
+            // >> BEGIN
             {
-                options.Scope.Add(scope);
+                //foreach (string scope in mergedOptions.Scope)
+                //{
+                //    options.Scope.Add(scope);
+                //}
+
+                if (options.Scope != mergedOptions.Scope)
+                {
+                    var scopeArray = options.Scope.ToArray();
+                    foreach (string scope in mergedOptions.Scope)
+                    {
+                        if (!string.IsNullOrWhiteSpace(scope) && !scopeArray.Any(s => string.Equals(s, scope, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            options.Scope.Add(scope);
+                        }
+                    }
+                }
             }
+            // << END
 
             options.RemoteSignOutPath = mergedOptions.RemoteSignOutPath;
             options.SignOutScheme = mergedOptions.SignOutScheme;
